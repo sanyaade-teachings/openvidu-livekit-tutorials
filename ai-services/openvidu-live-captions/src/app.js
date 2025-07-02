@@ -57,30 +57,21 @@ async function joinRoom() {
     }
   );
 
-room.registerTextStreamHandler("lk.transcription", async (reader, participantInfo) => {
-    const message = await reader.readAll();
-    const isFinal = reader.info.attributes["lk.transcription_final"] === "true";
-    const trackId = reader.info.attributes["lk.transcribed_track_id"];
+  room.registerTextStreamHandler("lk.transcription", async (reader, participantInfo) => {
+      const message = await reader.readAll();
+      const isFinal = reader.info.attributes["lk.transcription_final"] === "true";
+      const trackId = reader.info.attributes["lk.transcribed_track_id"];
 
-    if (isFinal) {
-      // Due to a bug in LiveKit Server the participantInfo object may be empty.
-      // You can still get the participant owning the audio track like below:
-      let participant;
-      if (localParticipant.audioTrackPublications.has(trackId)) {
-        participant = room.localParticipant;
-      } else {
-        participant = room.remoteParticipants.values().find(p => p.audioTrackPublications.has(trackId));
+      if (isFinal) {
+        const speaker = participantInfo.identity == room.localParticipant.identity
+            ? "You" : participantInfo.identity;
+        const timestamp = new Date().toLocaleTimeString();
+        const captionsTextarea = document.getElementById("captions");
+        captionsTextarea.value += `[${timestamp}] ${speaker}: ${message}\n`;
+        captionsTextarea.scrollTop = captionsTextarea.scrollHeight;
       }
-
-      const captionsTextarea = document.getElementById("captions");
-      const timestamp = new Date().toLocaleTimeString();
-      const participantIdentity =
-        participant == room.localParticipant ? "You" : participant.identity;
-      captionsTextarea.value += `[${timestamp}] ${participantIdentity}: ${message}\n`;
-      captionsTextarea.scrollTop = captionsTextarea.scrollHeight;
     }
-  }
-);
+  );
 
   try {
     // Get the room name and participant name from the form
